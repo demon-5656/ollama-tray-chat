@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Ollama Tray Chat
+GenericName=AI Chat Client
+Comment=Локальный чат-клиент для Ollama с поддержкой системного трея
+Comment[ru]=Локальный чат-клиент для Ollama с поддержкой системного трея
+Icon=/home/pc243/Программы/ollama-tray-chat/icons/ollama-chat.svg
+Exec=/home/pc243/Программы/ollama-tray-chat/ollama_tray_chat.py
+Terminal=false
+Categories=Network;Chat;Qt;
+Keywords=ollama;ai;chat;llm;local;
+StartupNotify=true
+StartupWMClass=ollama-tray-chat
+X-DBUS-StartupType=Unique

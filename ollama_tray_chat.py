@@ -36,7 +36,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 APP_ID = "ollama-tray-chat"
 APP_NAME = "Ollama Tray Chat"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", APP_ID)
 DATA_DIR = os.path.join(os.path.expanduser("~"), ".local", "share", APP_ID)
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")

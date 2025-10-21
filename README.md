@@ -2,7 +2,7 @@
 
 Минималистичный GUI-клиент для локального чата с моделями Ollama, разработанный специально для **Arch Linux + KDE**.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![License](https://img.shields.io/badge/license-MIT-green)
 

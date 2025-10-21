@@ -62,9 +62,44 @@ class ChatMessage:
 class ChatState:
     model: str = "phi3.5:3.8b-mini-instruct"
     system_prompt: str = (
-        "Ты — локальный помощник по Linux (Arch) и fish. Отвечай кратко, давай команды безопасно."
+        "Ты — локальный помощник по Linux (Arch) и fish. Отвечай кратко, давай команды безопасно.\n\n"
+        "ВАЖНО: Все команды оборачивай в блоки кода с ```bash или помечай через `команда`.\n"
+        "Пример:\n"
+        "```bash\n"
+        "ls -la\n"
+        "```\n"
+        "или просто: `ls -la`"
     )
     messages: List[ChatMessage] = field(default_factory=list)
+    # Настройки безопасности команд
+    safe_sudo_commands: List[str] = field(default_factory=lambda: [
+        "systemctl", "journalctl", "pacman", "apt", "dnf", "yum",
+        "docker", "podman", "snap", "flatpak", "cat", "less", "tail",
+        "head", "grep", "find", "ls", "lsblk", "lsusb", "lspci",
+        "ip", "ss", "netstat", "dmesg",
+    ])
+    deny_patterns: List[str] = field(default_factory=lambda: [
+        r"\brm\s+(-[rf]*[rf]|-[rf]*[rf])",
+        r"\brm\b.*--no-preserve-root",
+        r"\bdd\b.*if=.*of=/dev/",
+        r"\bmkfs\.",
+        r"\bfdisk\b",
+        r"\bparted\b",
+        r":\s*\(\s*\)\s*\{",
+        r"while\s+true.*do",
+        r">\s*/etc/",
+        r">\s*/boot/",
+        r">\s*/sys/",
+        r"\bchmod\s+777\s+/",
+        r"\bchown\s+.*\s+/\s*$",
+        r"\bhping",
+        r"\bnmap.*-sS",
+        r"curl.*\|\s*bash",
+        r"wget.*\|\s*sh",
+        r"curl.*\|\s*sh",
+        r">\s*/dev/null\s+2>&1\s*&",
+        r"\b(mkfs|shutdown|reboot|halt|poweroff|init\s+[06])\b",
+    ])
 
 
 class ChatWorker(QtCore.QThread):
@@ -272,7 +307,9 @@ class MainWindow(QtWidgets.QMainWindow):
         v.addWidget(QtWidgets.QLabel("💬 История:"))
         v.addWidget(self.history, 1)
         # --- Предложенные команды от ассистента ---
-        v.addWidget(QtWidgets.QLabel("🔧 Предложенные команды:"))
+        cmd_label = QtWidgets.QLabel("🔧 Предложенные команды (обновляются при следующем вопросе):")
+        cmd_label.setWordWrap(True)
+        v.addWidget(cmd_label)
         # Контейнер для предложенных команд
         self.suggested_list = QtWidgets.QListWidget()
         self.suggested_list.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
@@ -281,9 +318,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Панель кнопок для предложенных команд
         sug_btn_bar = QtWidgets.QHBoxLayout()
-        self.sug_preview_btn = QtWidgets.QPushButton("Просмотр")
-        self.sug_accept_btn = QtWidgets.QPushButton("Одобрить")
-        self.sug_reject_btn = QtWidgets.QPushButton("Отклонить")
+        self.sug_preview_btn = QtWidgets.QPushButton("👁️ Просмотр")
+        self.sug_accept_btn = QtWidgets.QPushButton("✅ Выполнить")
+        self.sug_reject_btn = QtWidgets.QPushButton("🗑️ Убрать")
         sug_btn_bar.addWidget(self.sug_preview_btn)
         sug_btn_bar.addWidget(self.sug_accept_btn)
         sug_btn_bar.addWidget(self.sug_reject_btn)
@@ -306,6 +343,10 @@ class MainWindow(QtWidgets.QMainWindow):
         quit_action = file_menu.addAction("🚪 Выход")
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.on_quit)
+        
+        settings_menu = menubar.addMenu("⚙️ Настройки")
+        security_action = settings_menu.addAction("🛡️ Безопасность команд")
+        security_action.triggered.connect(self.show_security_settings)
         
         help_menu = menubar.addMenu("❓ Помощь")
         about_action = help_menu.addAction("ℹ️ О программе")
@@ -356,6 +397,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     system_prompt=cfg.get("system_prompt", ""),
                     messages=[],
                 )
+                # Загружаем настройки безопасности
+                if "safe_sudo_commands" in cfg:
+                    st.safe_sudo_commands = cfg["safe_sudo_commands"]
+                if "deny_patterns" in cfg:
+                    st.deny_patterns = cfg["deny_patterns"]
                 return st
             except Exception:
                 pass
@@ -366,6 +412,8 @@ class MainWindow(QtWidgets.QMainWindow):
         cfg = {
             "model": self.state.model,
             "system_prompt": self.sys_prompt.toPlainText(),
+            "safe_sudo_commands": self.state.safe_sudo_commands,
+            "deny_patterns": self.state.deny_patterns,
         }
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -449,6 +497,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.state.model = self.model_box.currentText()
         self.state.system_prompt = self.sys_prompt.toPlainText()
         self.save_state()
+
+        # Очищаем список предложенных команд перед новым запросом
+        self.suggested_list.clear()
 
         # UI
         self._append_bubble("user", prompt)
@@ -555,64 +606,273 @@ class MainWindow(QtWidgets.QMainWindow):
                 <li>Системный трей</li>
                 <li>Автосохранение истории</li>
                 <li>Настраиваемый системный промпт</li>
+                <li>Выполнение команд с проверкой безопасности</li>
             </ul>
             <p><b>Разработано для Arch Linux + KDE</b></p>
             <p>© 2025</p>
             """
         )
 
+    def show_security_settings(self):
+        """Диалог настройки безопасности команд"""
+        dlg = QtWidgets.QDialog(self)
+        dlg.setWindowTitle("⚙️ Настройки безопасности команд")
+        dlg.resize(700, 500)
+        
+        layout = QtWidgets.QVBoxLayout(dlg)
+        
+        # Табы
+        tabs = QtWidgets.QTabWidget()
+        
+        # === Вкладка 1: Разрешённые sudo команды ===
+        sudo_tab = QtWidgets.QWidget()
+        sudo_layout = QtWidgets.QVBoxLayout(sudo_tab)
+        
+        sudo_label = QtWidgets.QLabel(
+            "✅ <b>Разрешённые команды с sudo</b><br>"
+            "Эти команды можно выполнять с sudo (по одной на строку):"
+        )
+        sudo_layout.addWidget(sudo_label)
+        
+        self.sudo_edit = QtWidgets.QPlainTextEdit()
+        self.sudo_edit.setPlainText("\n".join(self.state.safe_sudo_commands))
+        self.sudo_edit.setStyleSheet("""
+            QPlainTextEdit {
+                font-family: monospace;
+                background-color: #e8e8e8;
+                color: #212121;
+                border: 1px solid #999;
+                border-radius: 4px;
+                padding: 8px;
+            }
+        """)
+        sudo_layout.addWidget(self.sudo_edit)
+        
+        sudo_hint = QtWidgets.QLabel(
+            "💡 <i>Примеры: systemctl, docker, pacman, journalctl</i>"
+        )
+        sudo_hint.setWordWrap(True)
+        sudo_layout.addWidget(sudo_hint)
+        
+        tabs.addTab(sudo_tab, "✅ Sudo команды")
+        
+        # === Вкладка 2: Чёрный список (регулярные выражения) ===
+        deny_tab = QtWidgets.QWidget()
+        deny_layout = QtWidgets.QVBoxLayout(deny_tab)
+        
+        deny_label = QtWidgets.QLabel(
+            "❌ <b>Чёрный список (regex паттерны)</b><br>"
+            "Команды, соответствующие этим паттернам, будут заблокированы:"
+        )
+        deny_layout.addWidget(deny_label)
+        
+        self.deny_edit = QtWidgets.QPlainTextEdit()
+        self.deny_edit.setPlainText("\n".join(self.state.deny_patterns))
+        self.deny_edit.setStyleSheet("""
+            QPlainTextEdit {
+                font-family: monospace;
+                background-color: #e8e8e8;
+                color: #212121;
+                border: 1px solid #999;
+                border-radius: 4px;
+                padding: 8px;
+            }
+        """)
+        deny_layout.addWidget(self.deny_edit)
+        
+        deny_hint = QtWidgets.QLabel(
+            "⚠️ <i>Осторожно! Неправильные regex могут сломать фильтр.<br>"
+            "Примеры: \\brm\\s+-rf (блокирует rm -rf), \\bshutdown\\b (блокирует shutdown)</i>"
+        )
+        deny_hint.setWordWrap(True)
+        deny_layout.addWidget(deny_hint)
+        
+        tabs.addTab(deny_tab, "❌ Чёрный список")
+        
+        # === Вкладка 3: Справка ===
+        help_tab = QtWidgets.QWidget()
+        help_layout = QtWidgets.QVBoxLayout(help_tab)
+        
+        help_text = QtWidgets.QTextBrowser()
+        help_text.setHtml("""
+            <h3>🛡️ Как работает система безопасности</h3>
+            
+            <h4>Принцип Blacklist (Чёрный список)</h4>
+            <p><b>Разрешены ВСЕ команды</b>, кроме тех, что попадают в чёрный список.</p>
+            
+            <h4>✅ Разрешённые sudo команды</h4>
+            <p>Список команд, которые можно выполнять с <code>sudo</code>. 
+            Если команда не в этом списке, <code>sudo</code> будет заблокирован.</p>
+            
+            <h4>❌ Чёрный список</h4>
+            <p>Regex-паттерны опасных команд. Если команда совпадает с любым паттерном — она блокируется.</p>
+            
+            <h4>Примеры блокировки:</h4>
+            <ul>
+                <li><code>\\brm\\s+-rf</code> — блокирует <code>rm -rf</code></li>
+                <li><code>\\bdd\\b.*of=/dev/</code> — блокирует запись dd в устройства</li>
+                <li><code>curl.*\\|\\s*bash</code> — блокирует <code>curl url | bash</code></li>
+            </ul>
+            
+            <h4>⚠️ Важно!</h4>
+            <ul>
+                <li>Всегда проверяйте команды вручную перед одобрением</li>
+                <li>AI может ошибаться в предложенных командах</li>
+                <li>После изменения настроек нажмите "Сохранить"</li>
+            </ul>
+        """)
+        help_layout.addWidget(help_text)
+        
+        tabs.addTab(help_tab, "❓ Справка")
+        
+        layout.addWidget(tabs)
+        
+        # Кнопки
+        btn_box = QtWidgets.QHBoxLayout()
+        
+        reset_btn = QtWidgets.QPushButton("🔄 Сбросить к умолчаниям")
+        reset_btn.clicked.connect(lambda: self.reset_security_defaults(dlg))
+        
+        save_btn = QtWidgets.QPushButton("💾 Сохранить")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        save_btn.clicked.connect(lambda: self.save_security_settings(dlg))
+        
+        cancel_btn = QtWidgets.QPushButton("❌ Отмена")
+        cancel_btn.clicked.connect(dlg.reject)
+        
+        btn_box.addWidget(reset_btn)
+        btn_box.addStretch()
+        btn_box.addWidget(cancel_btn)
+        btn_box.addWidget(save_btn)
+        
+        layout.addLayout(btn_box)
+        
+        dlg.exec()
+    
+    def reset_security_defaults(self, dlg):
+        """Сброс настроек безопасности к значениям по умолчанию"""
+        reply = QtWidgets.QMessageBox.question(
+            dlg,
+            "Подтверждение",
+            "Вернуть настройки безопасности к значениям по умолчанию?",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+        )
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            default_state = ChatState()
+            self.sudo_edit.setPlainText("\n".join(default_state.safe_sudo_commands))
+            self.deny_edit.setPlainText("\n".join(default_state.deny_patterns))
+            QtWidgets.QMessageBox.information(dlg, "Готово", "Настройки сброшены к умолчаниям")
+    
+    def save_security_settings(self, dlg):
+        """Сохранение настроек безопасности"""
+        # Парсим sudo команды
+        sudo_text = self.sudo_edit.toPlainText()
+        sudo_cmds = [line.strip() for line in sudo_text.splitlines() if line.strip()]
+        
+        # Парсим deny patterns
+        deny_text = self.deny_edit.toPlainText()
+        deny_pats = [line.strip() for line in deny_text.splitlines() if line.strip()]
+        
+        # Проверяем regex на валидность
+        import re
+        invalid_patterns = []
+        for pat in deny_pats:
+            try:
+                re.compile(pat)
+            except re.error:
+                invalid_patterns.append(pat)
+        
+        if invalid_patterns:
+            QtWidgets.QMessageBox.critical(
+                dlg,
+                "Ошибка в regex",
+                f"Неправильные regex паттерны:\n\n" + "\n".join(invalid_patterns[:5])
+            )
+            return
+        
+        # Сохраняем
+        self.state.safe_sudo_commands = sudo_cmds
+        self.state.deny_patterns = deny_pats
+        self.save_state()
+        
+        QtWidgets.QMessageBox.information(
+            dlg,
+            "Сохранено",
+            f"Настройки безопасности сохранены!\n\n"
+            f"✅ Sudo команд: {len(sudo_cmds)}\n"
+            f"❌ Чёрный список: {len(deny_pats)} паттернов"
+        )
+        dlg.accept()
+
     # ====== Парсинг команд из текста ассистента ======
     def parse_commands(self, text: str) -> list:
         """
         Извлекает потенциальные shell-команды из ответа ассистента.
-        Правила простые и эмпирические:
-        - Блоки ```bash``` или ```sh```
-        - Строки, начинающиеся с `$ ` или `sudo `
-        - Однострочные команды (без пояснений) — как fallback
+        Правила:
+        - Блоки ```bash```, ```sh```, ```fish```, или просто ```
+        - Команды в обратных кавычках `команда`
+        - Строки, начинающиеся с `$ `, `> `, `sudo `
         Возвращает список строк (команд).
         """
         cmds = []
         if not text:
             return cmds
 
-        # 1) блоки ```bash``` ```sh```
         import re
 
-        code_blocks = re.findall(r"```(?:bash|sh)?\n(.*?)```", text, flags=re.S | re.I)
+        # 1) Блоки кода ```bash```, ```sh```, ```fish```, или просто ```
+        code_blocks = re.findall(r"```(?:bash|sh|fish)?\s*\n(.*?)```", text, flags=re.S | re.I)
         for block in code_blocks:
             for line in block.splitlines():
                 line = line.strip()
-                if not line:
+                if not line or line.startswith("#"):
                     continue
-                # игнорируем комментарии
-                if line.startswith("#"):
-                    continue
-                cmds.append(line)
+                # убираем префиксы $ и >
+                if line.startswith("$ "):
+                    line = line[2:].strip()
+                elif line.startswith("> "):
+                    line = line[2:].strip()
+                if line:
+                    cmds.append(line)
 
-        # 2) строки, начинающиеся с $ или sudo
+        # 2) Команды в обратных кавычках `команда`
+        inline_cmds = re.findall(r"`([^`\n]+)`", text)
+        for cmd in inline_cmds:
+            cmd = cmd.strip()
+            # проверяем, что это похоже на команду (начинается с буквы/цифры)
+            parts = cmd.split()
+            if parts and re.match(r"^[a-z0-9_\-./]+$", parts[0], flags=re.I):
+                if cmd not in cmds and len(cmd) < 200:  # фильтр слишком длинных строк
+                    cmds.append(cmd)
+
+        # 3) Строки, начинающиеся с $ или > или sudo
         for line in text.splitlines():
             s = line.strip()
             if not s:
                 continue
-            if s.startswith("$"):
-                candidate = s.lstrip("$ ")
-                if candidate:
+            if s.startswith("$ "):
+                candidate = s[2:].strip()
+                if candidate and candidate not in cmds:
                     cmds.append(candidate)
-            elif s.startswith("sudo "):
+            elif s.startswith("> "):
+                candidate = s[2:].strip()
+                if candidate and candidate not in cmds:
+                    cmds.append(candidate)
+            elif s.startswith("sudo ") and s not in cmds:
                 cmds.append(s)
 
-        # 3) fallback: если ничего не найдено, попробуем найти короткие однострочные команды
-        if not cmds:
-            for line in text.splitlines():
-                s = line.strip()
-                if not s:
-                    continue
-                # простая эвристика: строка без пробелов или с одним аргументом
-                parts = s.split()
-                if 1 <= len(parts) <= 3 and re.match(r"^[a-z0-9_\-./]+$", parts[0], flags=re.I):
-                    cmds.append(s)
-
-        # убираем дубликаты, сохраняем порядок
+        # Убираем дубликаты, сохраняем порядок
         seen = set()
         out = []
         for c in cmds:
@@ -631,6 +891,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(self, "Просмотр команды", f"Команда:\n{cmd}")
 
     def on_suggest_reject(self):
+        """Отклонить команду - просто убрать из списка"""
         item = self.suggested_list.currentItem()
         if not item:
             return
@@ -708,42 +969,42 @@ class MainWindow(QtWidgets.QMainWindow):
             runner.start()
             dlg.exec()
 
-            # логируем в историю и удаляем из списка
+            # логируем в историю (команду НЕ удаляем из списка)
             self.append_history_log("system", f"Выполнена команда: {cmd}")
-            self.suggested_list.takeItem(self.suggested_list.currentRow())
 
     def is_command_allowed(self, cmd: str) -> bool:
-        """Простая проверка разрешённых команд.
-        Разрешаем только команды из белого списка или начинающиеся с безопасных утилит.
-        Запрещаем явные опасные паттерны.
+        """Проверка команд через чёрный список (blacklist).
+        Разрешены ВСЕ команды, кроме явно опасных.
+        Блокируются только деструктивные операции и потенциально опасные паттерны.
         """
         import re
 
-        deny_patterns = [r"rm\s+-rf", r":\s*\\" , r">\s*/dev/null 2>&1 &", r"forkbomb", r":(){"]
-        for p in deny_patterns:
-            if re.search(p, cmd, flags=re.I):
-                return False
-
-        # allowlist (проверяем первые токены)
-        allowed_bins = {
-            "ls", "cat", "echo", "grep", "sed", "awk", "head", "tail",
-            "systemctl", "journalctl", "docker", "git", "curl", "wget",
-            "ping", "whoami", "id", "ps", "df", "du", "uptime", "free",
-            "pacman", "apt", "snap", "uname",
-        }
-        parts = cmd.strip().split()
-        if not parts:
+        if not cmd or not cmd.strip():
             return False
-        bin0 = parts[0]
-        # если команда содержит путь — разрешать только если bin в allowlist
-        base = bin0.split('/')[-1]
-        if base in allowed_bins:
-            return True
-        # дополнительная проверка для простых выражений: echo "..."
-        if base in ("echo",):
-            return True
-        # иначе запрет
-        return False
+
+        # Используем паттерны из настроек
+        for pattern in self.state.deny_patterns:
+            try:
+                if re.search(pattern, cmd, flags=re.I):
+                    return False
+            except re.error:
+                # Если regex невалиден - пропускаем
+                continue
+        
+        # Дополнительная проверка: запрещаем sudo с опасными командами
+        if cmd.strip().startswith("sudo"):
+            # Разрешаем sudo только для команд из настроек
+            parts = cmd.strip().split()
+            if len(parts) >= 2:
+                sudo_cmd = parts[1]
+                if sudo_cmd not in self.state.safe_sudo_commands:
+                    # Проверяем, не содержит ли опасных флагов
+                    dangerous_flags = ["rm", "dd", "mkfs", "fdisk", "parted", "shutdown", "reboot"]
+                    if any(d in sudo_cmd for d in dangerous_flags):
+                        return False
+        
+        # Если не попало в чёрный список - разрешаем
+        return True
 
 
 class CommandRunner(QtCore.QThread):

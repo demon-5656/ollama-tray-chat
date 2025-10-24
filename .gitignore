@@ -20,6 +20,20 @@ wheels/
 .installed.cfg
 *.egg
 
+# Releases, binaries
+releases/
+*.deb
+*.spec
+*.exe
+*.dll
+*.zip
+*.tar.gz
+*.bak
+*.log
+
+# Ollama Tray Chat specific
+ollama-tray-chat.desktop
+
 # PyQt
 *.ui~
 *.qrc~

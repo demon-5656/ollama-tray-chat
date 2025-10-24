@@ -1,0 +1,43 @@
+[4m [0m[4m [0m[4mUNIT                                                                                                      [0m[4m [0m[4mLOAD  [0m[4m [0m[4mACTIVE[0m[4m [0m[4mSUB      [0m[4m [0m[4mDESCRIPTION                                                                                     [0m
+[4m[58:5:245m [0m[4m[58:5:245m [0m[4m[58:5:245mproc-sys-fs-binfmt_misc.automount                                                                         [0m[4m[58:5:245m [0m[4m[58:5:245mloaded[0m[4m[58:5:245m [0m[4m[58:5:245mactive[0m[4m[58:5:245m [0m[4m[58:5:245mrunning  [0m[4m[58:5:245m [0m[4m[58:5:245mArbitrary Executable File Formats File System Automount Point                                   [0m
+  sys-devices-LNXSYSTM:00-LNXSYBUS:00-MSFT0101:00-tpm-tpm0.device                                            loaded active plugged   /sys/devices/LNXSYSTM:00/LNXSYBUS:00/MSFT0101:00/tpm/tpm0
+  sys-devices-LNXSYSTM:00-LNXSYBUS:00-MSFT0101:00-tpmrm-tpmrm0.device                                        loaded active plugged   /sys/devices/LNXSYSTM:00/LNXSYBUS:00/MSFT0101:00/tpmrm/tpmrm0
+  sys-devices-pci0000:00-0000:00:01.0-0000:01:00.1-sound-card1-controlC1.device                              loaded active plugged   /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.1/sound/card1/controlC1
+  sys-devices-pci0000:00-0000:00:14.0-usb1-1\x2d9-1\x2d9:1.0-host4-target4:0:0-4:0:0:0-block-sdd-sdd1.device loaded active plugged   DataTraveler_3.0 Ventoy
+  sys-devices-pci0000:00-0000:00:14.0-usb1-1\x2d9-1\x2d9:1.0-host4-target4:0:0-4:0:0:0-block-sdd-sdd2.device loaded active plugged   DataTraveler_3.0 VTOYEFI
+  sys-devices-pci0000:00-0000:00:14.0-usb1-1\x2d9-1\x2d9:1.0-host4-target4:0:0-4:0:0:0-block-sdd.device      loaded active plugged   DataTraveler_3.0
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda1.device                   loaded active plugged   Patriot_Burst_Elite_240GB EFI\x20system\x20partition
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda2.device                   loaded active plugged   Patriot_Burst_Elite_240GB LDM\x20metadata\x20partition
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda3.device                   loaded active plugged   Patriot_Burst_Elite_240GB Microsoft\x20reserved\x20partition
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda4.device                   loaded active plugged   Patriot_Burst_Elite_240GB LDM\x20data\x20partition
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda5.device                   loaded active plugged   Patriot_Burst_Elite_240GB LDM\x20data\x20partition
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda-sda6.device                   loaded active plugged   Patriot_Burst_Elite_240GB 6
+  sys-devices-pci0000:00-0000:00:17.0-ata1-host0-target0:0:0-0:0:0:0-block-sda.device                        loaded active plugged   Patriot_Burst_Elite_240GB
+  sys-devices-pci0000:00-0000:00:17.0-ata3-host2-target2:0:0-2:0:0:0-block-sdb-sdb1.device                   loaded active plugged   WDC_WDS240G2G0A-00JH30 1
+  sys-devices-pci0000:00-0000:00:17.0-ata3-host2-target2:0:0-2:0:0:0-block-sdb-sdb2.device                   loaded active plugged   WDC_WDS240G2G0A-00JH30 root
+  sys-devices-pci0000:00-0000:00:17.0-ata3-host2-target2:0:0-2:0:0:0-block-sdb.device                        loaded active plugged   WDC_WDS240G2G0A-00JH30
+  sys-devices-pci0000:00-0000:00:17.0-ata4-host3-target3:0:0-3:0:0:0-block-sdc-sdc1.device                   loaded active plugged   ST320LM001_HN-M320MBB HDD_№161
+  sys-devices-pci0000:00-0000:00:17.0-ata4-host3-target3:0:0-3:0:0:0-block-sdc.device                        loaded active plugged   ST320LM001_HN-M320MBB
+  sys-devices-pci0000:00-0000:00:1d.0-0000:03:00.0-net-enp3s0.device                                         loaded active plugged   RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller (Onboard Ethernet)
+  sys-devices-pci0000:00-0000:00:1f.3-sound-card0-controlC0.device                                           loaded active plugged   /sys/devices/pci0000:00/0000:00:1f.3/sound/card0/controlC0
+  sys-devices-pci0000:00-0000:00:1f.5-spi_master-spi0-spi0.0-mtd-mtd0-mtd1.device                            loaded active plugged   /sys/devices/pci0000:00/0000:00:1f.5/spi_master/spi0/spi0.0/mtd/mtd0/mtd1
+  sys-devices-pci0000:00-0000:00:1f.5-spi_master-spi0-spi0.0-mtd-mtd0-mtd1ro.device                          loaded active plugged   /sys/devices/pci0000:00/0000:00:1f.5/spi_master/spi0/spi0.0/mtd/mtd0/mtd1ro
+  sys-devices-pci0000:00-0000:00:1f.5-spi_master-spi0-spi0.0-mtd-mtd0.device                                 loaded active plugged   /sys/devices/pci0000:00/0000:00:1f.5/spi_master/spi0/spi0.0/mtd/mtd0
+  sys-devices-pci0000:00-0000:00:1f.5-spi_master-spi0-spi0.0-mtd-mtd0ro.device                               loaded active plugged   /sys/devices/pci0000:00/0000:00:1f.5/spi_master/spi0/spi0.0/mtd/mtd0ro
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.1-tty-ttyS1.device                               loaded active plugged   /sys/devices/platform/serial8250/serial8250:0/serial8250:0.1/tty/ttyS1
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.2-tty-ttyS2.device                               loaded active plugged   /sys/devices/platform/serial8250/serial8250:0/serial8250:0.2/tty/ttyS2
+  sys-devices-platform-serial8250-serial8250:0-serial8250:0.3-tty-ttyS3.device                               loaded active plugged   /sys/devices/platform/serial8250/serial8250:0/serial8250:0.3/tty/ttyS3
+  sys-devices-pnp0-00:01-00:01:0-00:01:0.0-tty-ttyS0.device                                                  loaded active plugged   /sys/devices/pnp0/00:01/00:01:0/00:01:0.0/tty/ttyS0
+  sys-devices-virtual-block-zram0.device                                                                     loaded active plugged   /sys/devices/virtual/block/zram0
+  sys-devices-virtual-misc-rfkill.device                                                                     loaded active plugged   /sys/devices/virtual/misc/rfkill
+  sys-devices-virtual-net-br\x2d62cac80816fb.device                                                          loaded active plugged   /sys/devices/virtual/net/br-62cac80816fb
+  sys-devices-virtual-net-DimaK.device                                                                       loaded active plugged   /sys/devices/virtual/net/DimaK
+  sys-devices-virtual-net-docker0.device                                                                     loaded active plugged   /sys/devices/virtual/net/docker0
+  sys-module-configfs.device                                                                                 loaded active plugged   /sys/module/configfs
+  sys-module-fuse.device                                                                                     loaded active plugged   /sys/module/fuse
+  sys-subsystem-net-devices-br\x2d62cac80816fb.device                                                        loaded active plugged   /sys/subsystem/net/devices/br-62cac80816fb
+  sys-subsystem-net-devices-DimaK.device                                                                     loaded active plugged   /sys/subsystem/net/devices/DimaK
+  sys-subsystem-net-devices-docker0.device                                                                   loaded active plugged   /sys/subsystem/net/devices/docker0
+[4m[58:5:245m [0m[4m[58:5:245m [0m[4m[58:5:245msys-subsystem-net-devices-enp3s0.device                                                                   [0m[4m[58:5:245m [0m[4m[58:5:245mloaded[0m[4m[58:5:245m [0m[4m[58:5:245mactive[0m[4m[58:5:245m [0m[4m[58:5:245mplugged  [0m[4m[58:5:245m [0m[4m[58:5:245mRTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller (Onboard Ethernet)               [0m
+  -.mount                                                                                                    loaded active mounted   Root Mount
+  boot-efi.mount                                                    
